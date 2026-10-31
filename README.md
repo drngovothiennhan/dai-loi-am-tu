@@ -7,17 +7,19 @@ Không gian thiền 3D (Three.js) tách từ hiutmc-ecosystem.
 - Đã duyệt (2026-10-31): 12 dòng quẻ, 9 ngưỡng cảnh giới, điểm công đức (lạy 3, hạt 1, mõ 1, hương 1, tĩnh tọa 2/phút).
 - Chưa có: quyên góp, kênh tụng kinh, bộ 30 quẻ.
 
+## Kịch bản
+
+Kịch bản tái cấu trúc (81 nạn, 4 khu vực, tàng kinh): [docs/KICH_BAN.md](docs/KICH_BAN.md).
+
 ## Hình nhân vật và trang trí
 
-Ảnh gốc nằm trong `asset-sources/`. Đó là các bảng concept: nhân vật và vật thể
-không xếp theo lưới, nhưng đã có sẵn kênh alpha. `scripts/build-sprites.mjs` dò
-từng hình bằng connected component trên alpha, cắt riêng từng hình, chuẩn hóa
-chiều cao theo tư thế rồi xuất ra `public/sprites/` và `public/decor/`.
+Nguồn nằm trong `asset-sources/`: `v3/` là bộ production (atlas nhân vật, frame, tổng quan),
+`decor.png` là bảng trang trí. `scripts/build-assets.mjs` lấy frame nhân vật từ atlas v3,
+tách vật trang trí khỏi bảng, rồi xuất `public/characters/`, `public/decor/` và `lib/sprite-manifest.ts`.
 
 ```bash
-npm run build:sprites   # dựng lại sprite
-npm run check:sprites   # kiểm tra sprite còn khớp ảnh gốc
+npm run build:sprites   # dựng lại atlas nhân vật, trang trí và manifest
+npm run check:sprites   # kiểm tra đầu ra còn khớp nguồn
 ```
 
-Hai tư thế quỳ và lạy của Phật tử không có trong bộ ảnh ở độ phân giải dùng được
-(chỉ cao 26–41px sau khi tách), nên nhân vật này tạm dùng tư thế chắp tay khi lạy.
+Các lỗi đã biết của atlas v3 và tư thế chưa có được liệt kê trong `docs/KICH_BAN.md`.

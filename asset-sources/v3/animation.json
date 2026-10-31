@@ -1,0 +1,252 @@
+{
+  "chu_tieu": {
+    "frameSize": {
+      "width": 128,
+      "height": 128
+    },
+    "anchor": {
+      "x": 0.5,
+      "y": 1.0
+    },
+    "views": {
+      "front": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "side": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "rear": [
+        17,
+        18,
+        19
+      ]
+    },
+    "animations": {
+      "idle": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "fps": 4,
+        "repeat": -1
+      },
+      "walk_preview": {
+        "frames": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "fps": 8,
+        "repeat": -1
+      },
+      "sit": {
+        "frames": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "fps": 5,
+        "repeat": -1
+      },
+      "kneel": {
+        "frames": [
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "fps": 6,
+        "repeat": -1
+      },
+      "bow": {
+        "frames": [
+          14,
+          15,
+          16
+        ],
+        "fps": 6,
+        "repeat": 0
+      },
+      "turnaround": {
+        "frames": [
+          0,
+          8,
+          17,
+          18,
+          19
+        ],
+        "fps": 2,
+        "repeat": 0
+      }
+    },
+    "frameKeys": [
+      "chu_tieu_00",
+      "chu_tieu_01",
+      "chu_tieu_02",
+      "chu_tieu_03",
+      "chu_tieu_04",
+      "chu_tieu_05",
+      "chu_tieu_06",
+      "chu_tieu_07",
+      "chu_tieu_08",
+      "chu_tieu_09",
+      "chu_tieu_10",
+      "chu_tieu_11",
+      "chu_tieu_12",
+      "chu_tieu_13",
+      "chu_tieu_14",
+      "chu_tieu_15",
+      "chu_tieu_16",
+      "chu_tieu_17",
+      "chu_tieu_18",
+      "chu_tieu_19"
+    ]
+  },
+  "phat_tu": {
+    "frameSize": {
+      "width": 128,
+      "height": 128
+    },
+    "anchor": {
+      "x": 0.5,
+      "y": 1.0
+    },
+    "views": {
+      "front": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "side": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "rear": [
+        17,
+        18,
+        19
+      ]
+    },
+    "animations": {
+      "idle": {
+        "frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "fps": 4,
+        "repeat": -1
+      },
+      "walk_preview": {
+        "frames": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "fps": 8,
+        "repeat": -1
+      },
+      "sit": {
+        "frames": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "fps": 5,
+        "repeat": -1
+      },
+      "kneel": {
+        "frames": [
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "fps": 6,
+        "repeat": -1
+      },
+      "bow": {
+        "frames": [
+          14,
+          15,
+          16
+        ],
+        "fps": 6,
+        "repeat": 0
+      },
+      "turnaround": {
+        "frames": [
+          0,
+          8,
+          17,
+          18,
+          19
+        ],
+        "fps": 2,
+        "repeat": 0
+      }
+    },
+    "frameKeys": [
+      "phat_tu_00",
+      "phat_tu_01",
+      "phat_tu_02",
+      "phat_tu_03",
+      "phat_tu_04",
+      "phat_tu_05",
+      "phat_tu_06",
+      "phat_tu_07",
+      "phat_tu_08",
+      "phat_tu_09",
+      "phat_tu_10",
+      "phat_tu_11",
+      "phat_tu_12",
+      "phat_tu_13",
+      "phat_tu_14",
+      "phat_tu_15",
+      "phat_tu_16",
+      "phat_tu_17",
+      "phat_tu_18",
+      "phat_tu_19"
+    ]
+  }
+}

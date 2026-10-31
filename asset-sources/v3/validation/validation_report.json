@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "check": "frame_count",
+      "passed": true,
+      "detail": "40 frames"
+    },
+    {
+      "check": "dimensions",
+      "passed": true,
+      "detail": "all 128x128"
+    },
+    {
+      "check": "transparent_alpha",
+      "passed": true,
+      "detail": "all RGBA frames have transparent canvas"
+    },
+    {
+      "check": "atlas_bounds",
+      "passed": true,
+      "detail": "all frame rectangles inside atlas"
+    },
+    {
+      "check": "pixel_match",
+      "passed": true,
+      "detail": "atlas pixels equal standalone frames"
+    }
+  ],
+  "limitations": [
+    "Sampled poses are not a verified continuous walk cycle.",
+    "Only front/side/rear samples; no complete 8-direction set.",
+    "Automated checks validate technical integrity, not artistic quality."
+  ]
+}

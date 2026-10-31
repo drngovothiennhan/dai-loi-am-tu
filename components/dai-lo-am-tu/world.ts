@@ -45,10 +45,14 @@ export interface DecorArt {
   aspect: number;
 }
 
+// One shared atlas holds every character frame. A pose is the pixel rectangle of its frame in that atlas.
+export type FrameRect = [number, number, number, number];
+
 export interface CharacterArt {
   file: string;
-  frames: number;
-  poses: Record<string, number>;
+  atlasW: number;
+  atlasH: number;
+  poses: Record<string, FrameRect>;
 }
 
 interface Cushion {
@@ -144,6 +148,7 @@ export class DaiLoAmTuWorld {
   private sprite: THREE.Mesh;
   private spriteMat: THREE.MeshBasicMaterial;
   private spriteTex: THREE.Texture | null = null;
+  private atlasFile: string | null = null;
   private art: CharacterArt;
   private decor: Record<string, DecorArt>;
   private billboards: THREE.Mesh[] = [];
@@ -754,12 +759,12 @@ export class DaiLoAmTuWorld {
     return "idle";
   }
 
-  private frameFor(pose: string): number {
+  private frameFor(pose: string): FrameRect {
     for (const name of POSE_FALLBACK[pose] ?? [pose]) {
-      const i = this.art.poses[name];
-      if (i !== undefined) return i;
+      const rect = this.art.poses[name];
+      if (rect) return rect;
     }
-    return 0;
+    return this.art.poses.idle;
   }
 
   private poseLabel(): Pose {
@@ -770,8 +775,12 @@ export class DaiLoAmTuWorld {
   }
 
   private applyPose(dt: number, t: number): void {
-    const frame = this.frameFor(this.wantedPose());
-    if (this.spriteTex) this.spriteTex.offset.x = frame / this.art.frames;
+    const [x, y, w, h] = this.frameFor(this.wantedPose());
+    if (this.spriteTex) {
+      // Texture coordinates are bottom-up, so the atlas row is flipped.
+      this.spriteTex.repeat.set(w / this.art.atlasW, h / this.art.atlasH);
+      this.spriteTex.offset.set(x / this.art.atlasW, 1 - (y + h) / this.art.atlasH);
+    }
 
     // Face the camera around the vertical axis only, so the character never lies down or shears.
     const dx = this.camera.position.x - this.actor.position.x;
@@ -793,8 +802,11 @@ export class DaiLoAmTuWorld {
 
   setCharacter(art: CharacterArt): void {
     this.art = art;
-    const loader = new THREE.TextureLoader();
-    loader.load(
+    if (this.spriteTex && this.atlasFile === art.file) {
+      this.spriteMat.map = this.spriteTex;
+      return;
+    }
+    new THREE.TextureLoader().load(
       art.file,
       (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
@@ -803,10 +815,9 @@ export class DaiLoAmTuWorld {
         tex.generateMipmaps = true;
         tex.wrapS = THREE.ClampToEdgeWrapping;
         tex.wrapT = THREE.ClampToEdgeWrapping;
-        tex.repeat.set(1 / art.frames, 1);
-        tex.offset.set(0, 0);
         const old = this.spriteTex;
         this.spriteTex = tex;
+        this.atlasFile = art.file;
         this.spriteMat.map = tex;
         this.spriteMat.needsUpdate = true;
         old?.dispose();

@@ -7,6 +7,8 @@ import {
   DEFAULT_PROGRESS,
   MEDITATION_SECONDS_PER_SCROLL,
   REALMS,
+  NAN_TOTAL,
+  journeyPosition,
   TAPS_PER_CYCLE,
   currentVerse,
   loadProgress,
@@ -18,7 +20,7 @@ import {
   type Progress,
 } from "@/lib/progress";
 import { DEFAULT_MIX, loadMix, saveMix, ZenAudio, type MixerSettings } from "./audio";
-import { DaiLoAmTuWorld, type CharacterArt, type DecorArt, type Pose, type Zone } from "./world";
+import { DaiLoAmTuWorld, type CharacterArt, type DecorArt, type FrameRect, type Pose, type Zone } from "./world";
 import { CHARACTER_IDS, SPRITE_MANIFEST, type CharacterId } from "@/lib/sprite-manifest";
 import styles from "./DaiLoAmTu.module.css";
 
@@ -40,7 +42,12 @@ const DECOR_ART = SPRITE_MANIFEST.decor as unknown as Record<string, DecorArt>;
 
 function artFor(id: CharacterId): CharacterArt {
   const c = SPRITE_MANIFEST.characters[id];
-  return { file: c.file, frames: c.frames, poses: c.poses as unknown as Record<string, number> };
+  return {
+    file: SPRITE_MANIFEST.atlas.file,
+    atlasW: SPRITE_MANIFEST.atlas.width,
+    atlasH: SPRITE_MANIFEST.atlas.height,
+    poses: c.poses as unknown as Record<string, FrameRect>,
+  };
 }
 
 interface Toast {
@@ -51,7 +58,7 @@ interface Toast {
 const ZONE_LABEL: Record<Zone, string> = {
   hall: "Đại Hùng Bảo Điện",
   courtyard: "Sân Ánh Trăng Bồ Đề",
-  bridge: "Cầu Độc Mộc Lăng Vân",
+  bridge: "Thềm Lăng Vân",
 };
 
 export default function DaiLoAmTu() {
@@ -259,8 +266,8 @@ export default function DaiLoAmTu() {
   }, []);
 
   const pts = points(progress);
-  const realm = realmIndex(pts);
-  const nextRealm = REALMS[realm + 1];
+  const journey = journeyPosition(pts);
+  const nextChapter = REALMS[journey.chapter];
   const verse = currentVerse(progress);
   const scrolls = scrollCount(progress);
   const isMoving = pose === "walk";
@@ -292,7 +299,7 @@ export default function DaiLoAmTu() {
             🌕 Sân Ánh Trăng
           </button>
           <button type="button" aria-pressed={zone === "bridge"} onClick={() => walkTo(-22, 28)}>
-            🌉 Cầu Lăng Vân
+            🌉 Thềm Lăng Vân
           </button>
           <button type="button" onClick={toggleDay}>
             {day ? "☀️ Bình minh biển mây" : "🌙 Trăng rằm Linh Sơn"}
@@ -316,13 +323,15 @@ export default function DaiLoAmTu() {
 
       <aside className={styles.topRight} aria-label="Thông tin tu tập">
         <p className={styles.name}>Tiểu hành giả: <strong>{progress.name || "…"}</strong></p>
-        <p>Cảnh giới: <strong>{REALMS[realm].name}</strong> ({realm + 1}/9)</p>
+        <p>Chương {journey.chapter}/9: <strong>{journey.chapterName}</strong></p>
+        <p>Nạn đã qua: <strong>{journey.nanDone}/{NAN_TOTAL}</strong></p>
+        <div className={styles.bar} aria-hidden="true"><i style={{ width: `${Math.round((journey.nanDone / NAN_TOTAL) * 100)}%` }} /></div>
         <p>Công đức: <strong>{pts}</strong>
-          {nextRealm && <span className={styles.muted}> · còn {nextRealm.min - pts} đến cảnh giới kế</span>}
+          {nextChapter && <span className={styles.muted}> · còn {nextChapter.min - pts} công đức đến chương kế</span>}
         </p>
         <div className={styles.utility}>
           <button type="button" onClick={() => openPanel("audio")}>🎵 Thanh âm</button>
-          <button type="button" onClick={() => openPanel("scroll")}>📜 Chân kinh ({scrolls})</button>
+          <button type="button" onClick={() => openPanel("scroll")}>📜 Tàng kinh ({scrolls})</button>
         </div>
       </aside>
 
@@ -401,7 +410,12 @@ export default function DaiLoAmTu() {
 
       {panel === "scroll" && (
         <section className={styles.panel} aria-label="Vô tự chân kinh">
-          <h2>Vô tự chân kinh</h2>
+          <h2>Tàng Kinh Các</h2>
+          <p className={styles.lore}>
+            Ở Lôi Âm Tự, Ananda và Kasyapa trao cho Đường Tăng bộ kinh không chữ (Tây Du Ký, hồi 98).
+            Kinh có chữ chỉ đến khi vượt đủ 81 nạn.
+          </p>
+          <ProgressRow label="Nạn đã qua" value={journey.nanDone} target={NAN_TOTAL} />
           <ProgressRow label="Tràng hạt" value={progress.beads % BEADS_PER_CYCLE} target={BEADS_PER_CYCLE} />
           <ProgressRow label="Nhịp mõ" value={progress.taps % TAPS_PER_CYCLE} target={TAPS_PER_CYCLE} />
           <ProgressRow
@@ -410,7 +424,7 @@ export default function DaiLoAmTu() {
             target={MEDITATION_SECONDS_PER_SCROLL / 60}
           />
           <div className={styles.scroll}>
-            {verse ? <p>{verse}</p> : <p className={styles.muted}>Cuộn kinh còn trống. Hoàn thành 108 hạt, 108 nhịp mõ hoặc 3 phút tĩnh tọa để mở quẻ đầu tiên.</p>}
+            {verse ? <p>{verse}</p> : <p className={styles.muted}>Cuộn kinh còn trống. Hoàn thành 108 hạt, 108 nhịp mõ hoặc 3 phút tĩnh tọa để mở lời nhắc đầu tiên.</p>}
           </div>
           <p className={styles.muted}>Các lời nhắc này do HIU TMC soạn và đã được chủ dự án duyệt. Đây không phải kinh văn.</p>
           <button type="button" className={styles.close} onClick={() => setPanel(null)}>Đóng</button>

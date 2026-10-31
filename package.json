@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",
-    "build:sprites": "node scripts/build-sprites.mjs",
-    "check:sprites": "node scripts/build-sprites.mjs --check"
+    "build:sprites": "node scripts/build-assets.mjs",
+    "check:sprites": "node scripts/build-assets.mjs --check"
   },
   "dependencies": {
     "next": "16.3.4",

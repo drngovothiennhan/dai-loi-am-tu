@@ -141,3 +141,36 @@ export function saveProgress(p: Progress): boolean {
     return false;
   }
 }
+
+// The journey to Lôi Âm Tự is 81 nạn (tribulations), grouped into 9 chương of 9 nạn each. Each
+// chương uses one of the nine realm names, so the approved realm thresholds stay exactly as they are.
+export const NAN_TOTAL = 81;
+export const NAN_PER_CHAPTER = 9;
+
+export interface JourneyPosition {
+  chapter: number; // 1..9
+  chapterName: string;
+  nanDone: number; // 0..80, nạn passed so far
+  nanInChapter: number; // 0..8, nạn currently in progress within the chapter
+  pointsIntoChapter: number;
+  pointsForChapter: number; // points needed to finish this chapter (0 at the last one)
+}
+
+export function journeyPosition(pts: number): JourneyPosition {
+  const chapterIndex = realmIndex(pts);
+  const here = REALMS[chapterIndex];
+  const next = REALMS[chapterIndex + 1];
+  const span = next ? next.min - here.min : 0;
+  const into = pts - here.min;
+  const frac = span > 0 ? Math.min(1, into / span) : 1;
+  const nanInChapter = Math.min(NAN_PER_CHAPTER - 1, Math.floor(frac * NAN_PER_CHAPTER));
+  const nanDone = Math.min(NAN_TOTAL - 1, chapterIndex * NAN_PER_CHAPTER + nanInChapter);
+  return {
+    chapter: chapterIndex + 1,
+    chapterName: here.name,
+    nanDone,
+    nanInChapter,
+    pointsIntoChapter: into,
+    pointsForChapter: span,
+  };
+}
