@@ -39,7 +39,7 @@ export const REALMS = [
   { min: 500000, name: "Đại Giác Ngộ" },
 ] as const;
 
-// Lời nhắc tĩnh tâm do HIU TMC soạn. Đây KHÔNG phải kinh văn. Bộ quẻ chính thức cần chủ dự án duyệt.
+// Lời nhắc tĩnh tâm do HIU TMC soạn. Đây KHÔNG phải kinh văn. 12 dòng này và các ngưỡng cảnh giới, điểm công đức bên dưới đã được chủ dự án duyệt (2026-10-31).
 export const SCROLL_VERSES: readonly string[] = [
   "Tâm lặng thì nước trong, không cần khuấy động để thấy đáy.",
   "Một hơi thở chậm, một bước chân vững: đủ cho hôm nay.",

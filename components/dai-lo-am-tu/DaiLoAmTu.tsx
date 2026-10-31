@@ -364,7 +364,7 @@ export default function DaiLoAmTu() {
           <div className={styles.scroll}>
             {verse ? <p>{verse}</p> : <p className={styles.muted}>Cuộn kinh còn trống. Hoàn thành 108 hạt, 108 nhịp mõ hoặc 3 phút tĩnh tọa để mở quẻ đầu tiên.</p>}
           </div>
-          <p className={styles.muted}>Các lời nhắc này do HIU TMC soạn, không phải kinh văn. Bộ quẻ chính thức đang chờ chủ dự án duyệt.</p>
+          <p className={styles.muted}>Các lời nhắc này do HIU TMC soạn và đã được chủ dự án duyệt. Đây không phải kinh văn.</p>
           <button type="button" className={styles.close} onClick={() => setPanel(null)}>Đóng</button>
         </section>
       )}
