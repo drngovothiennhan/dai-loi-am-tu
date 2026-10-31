@@ -6,7 +6,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-export type Zone = "hall" | "courtyard" | "bridge";
+export type Zone = "hall" | "courtyard" | "bridge" | "library";
 export type Pose = "stand" | "walk" | "sit" | "bow" | "dance" | "gassho";
 
 export interface WorldEvents {
@@ -23,7 +23,9 @@ const GASSHO_TIME = 2.2;
 const WALK_SPEED = 3.2;
 const ALTAR = new THREE.Vector3(0, 0, -13.5);
 const HALL_DOOR_Z = 12;
-const BOUNDS = { minX: -30, maxX: 20, minZ: -16, maxZ: 38 };
+const BOUNDS = { minX: -30, maxX: 36, minZ: -16, maxZ: 38 };
+const LIBRARY_X = 21; // the Tàng Kinh Các room starts east of this line
+const LIBRARY_TABLE = { x: 28.5, z: 22 };
 
 // Keyframes for one bow cycle: [phase 0..1, rootY, upperX (bend forward), headX, armX, legX].
 // Which drawing to show for each state. A character may not have every pose, so each one falls back
@@ -231,6 +233,8 @@ export class DaiLoAmTuWorld {
     this.buildHall();
     this.buildCushions();
     this.buildCourtyard();
+    this.buildDressing();
+    this.buildLibrary();
     this.spriteMat = new THREE.MeshBasicMaterial({
       transparent: true,
       alphaTest: 0.35,
@@ -345,6 +349,98 @@ export class DaiLoAmTuWorld {
   // ---- building ------------------------------------------------------------------------------
 
 
+  // Statues, guardians, banners and gates that complete the hall, the courtyard and the bridge.
+  // Every piece is painted art from the overview sheet, placed as a camera-facing billboard.
+  private buildDressing(): void {
+    // Hall: Bodhisattvas beside the altar, guardians flanking the doorway, banners on the back wall.
+    this.addBillboard("quan-am-gold", -7.6, 0, -13.4);
+    this.addBillboard("quan-am-cream", 7.6, 0, -13.4);
+    this.addBillboard("guardian-blue-1", -12.8, 0, -15.6, { scale: 0.85 });
+    this.addBillboard("guardian-blue-3", 12.8, 0, -15.6, { scale: 0.85 });
+    this.addBillboard("hop-phap-1", -8.2, 0, 7.5, { scale: 0.78 });
+    this.addBillboard("hop-phap-2", 8.2, 0, 7.5, { scale: 0.78 });
+    this.addBillboard("banner-red-1", -13.2, 0, -10.5);
+    this.addBillboard("banner-red-2", 13.2, 0, -10.5);
+    this.addBillboard("bell-stand", -12.5, 0, 2);
+    this.addBillboard("drum", 12.5, 0, 2);
+
+    // Entrance: a pair of qilin guards in the courtyard just outside the hall doors.
+    this.addBillboard("qilin-gold", -3.4, 0, 14.6);
+    this.addBillboard("qilin-green", 3.4, 0, 14.6);
+
+    // Courtyard: the Bodhi tree is already in the scene. Add lotus pads, beasts, a pagoda and clouds.
+    this.addBillboard("lotus-white", 3.2, 0.12, 20.2, { scale: 0.9 });
+    this.addBillboard("lotus-green", 8.4, 0.12, 23.4, { scale: 0.9 });
+    this.addBillboard("deer-white", -10.5, 0, 27.5);
+    this.addBillboard("elephant", -13.4, 0, 23.5);
+    this.addBillboard("tortoise", 9.5, 0, 28.5);
+    this.addBillboard("pagoda-tall", 16.5, 0, 36.5);
+    this.addBillboard("temple-main", 2, 0, 58, { scale: 1.2 });
+    this.addBillboard("cloud-gold", -14, 2.6, 14, { scale: 1.3 });
+    this.addBillboard("cloud-gold", 14, 3.0, 31, { scale: 1.1 });
+    this.addBillboard("cloud-gold", -9, 3.4, 37, { scale: 1.2 });
+    this.addBillboard("apsara-1", 11.5, 3.6, 16.5);
+    this.addBillboard("apsara-3", -13.5, 4.2, 20);
+
+    // Thềm Lăng Vân: the gate at the foot of the bridge, a stone gate further back and rocks by the mist.
+    this.addBillboard("gate-stone", -22, 0, 28);
+  }
+
+  // Tàng Kinh Các: a closed reading room east of the courtyard, with shelves, a reading table
+  // holding the scroll, and lanterns. It is the only room that is real geometry (no painted art).
+  private buildLibrary(): void {
+    const wood = this.stone(0x4a2814, 0.7);
+    const stoneWall = this.stone(0x3b2a20, 0.9);
+    const floor = this.addMesh(new THREE.BoxGeometry(16, 0.6, 20), this.stone(0x5a4030, 0.45));
+    floor.position.set(28.5, -0.3, 22);
+    this.ground.push(floor);
+
+    const back = this.addMesh(new THREE.BoxGeometry(0.6, 9, 20), stoneWall);
+    back.position.set(36.3, 4.5, 22);
+    [12.3, 31.7].forEach((z) => {
+      const wall = this.addMesh(new THREE.BoxGeometry(16, 9, 0.6), stoneWall);
+      wall.position.set(28.5, 4.5, z);
+    });
+    const roof = this.addMesh(new THREE.BoxGeometry(16.6, 0.5, 20.6), wood);
+    roof.position.set(28.5, 9, 22);
+
+    // Shelves on the back wall, with rows of coloured spines.
+    const spineColors = [0x9b2d20, 0x2e5d7b, 0xc7a04a, 0x3d6b3a, 0x6b3d7b, 0xb45f2e];
+    [14, 18, 22, 26, 30].forEach((z, si) => {
+      const shelf = this.addMesh(new THREE.BoxGeometry(1.3, 6.2, 3.2), wood);
+      shelf.position.set(35.2, 3.1, z);
+      for (let row = 0; row < 4; row++) {
+        for (let k = 0; k < 6; k++) {
+          const color = spineColors[(si + row + k) % spineColors.length];
+          const book = this.addMesh(
+            new THREE.BoxGeometry(0.1, 0.9, 0.22),
+            new THREE.MeshStandardMaterial({ color, roughness: 0.8 }),
+          );
+          book.position.set(34.5, 0.9 + row * 1.35, z - 1.3 + k * 0.5);
+        }
+      }
+    });
+
+    // Reading table, with the scroll on it. The scroll is painted art, lit from above.
+    const table = this.addMesh(new THREE.BoxGeometry(3.2, 1.0, 1.8), wood);
+    table.position.set(LIBRARY_TABLE.x, 0.5, LIBRARY_TABLE.z);
+    const legGeo = new THREE.BoxGeometry(0.18, 0.8, 0.18);
+    [-1.4, 1.4].forEach((dx) => [-0.7, 0.7].forEach((dz) => {
+      const leg = this.addMesh(legGeo, wood);
+      leg.position.set(LIBRARY_TABLE.x + dx, 0.4, LIBRARY_TABLE.z + dz);
+    }));
+    this.addBillboard("scroll-banner", LIBRARY_TABLE.x, 1.0, LIBRARY_TABLE.z, { scale: 0.55 });
+
+    // Lanterns in the corners and a warm light over the table.
+    this.addBillboard("lantern", 22.6, 0, 14.2);
+    this.addBillboard("lantern", 22.6, 0, 29.8);
+    this.addBillboard("lamp-small", 33, 0, 14.6);
+    this.addBillboard("burner", 30, 0, 16.5);
+    const light = new THREE.PointLight(0xffb060, 18, 14, 1.6);
+    light.position.set(LIBRARY_TABLE.x, 4.5, LIBRARY_TABLE.z);
+    this.scene.add(light);
+  }
+
   // A piece of painted scenery standing in the 3D room. The plane is sized from the artwork's own
   // proportions and anchored at its foot, then turned to face the camera each frame.
   private addBillboard(name: string, x: number, y: number, z: number, opts: { scale?: number; faceCamera?: boolean } = {}) {
@@ -404,7 +500,7 @@ export class DaiLoAmTuWorld {
     [-5.5, 5.5].forEach((x) => {
       const col = this.addMesh(new THREE.CylinderGeometry(0.65, 0.7, 13, 24), wood);
       col.position.set(x, 6.5, -9.5);
-      this.addBillboard("dragon", x, 1.2, -8.6);
+      this.addBillboard(x < 0 ? "dragon" : "dragon-red", x, 1.2, -8.6);
     });
 
     // Altar: octagonal base, golden lotus, seated Buddha with mandorla.
@@ -582,6 +678,7 @@ export class DaiLoAmTuWorld {
       hall: [0, 8.5, 17],
       courtyard: [0, 9, 19],
       bridge: [0, 8, 17],
+      library: [0, 9, 15],
     };
     const [ox, oy, oz] = offsets[zone];
     this.cameraOffset.set(ox, oy, oz);
@@ -599,6 +696,7 @@ export class DaiLoAmTuWorld {
   }
 
   private zoneFor(x: number, z: number): Zone {
+    if (x >= LIBRARY_X && z >= HALL_DOOR_Z) return "library";
     if (z < HALL_DOOR_Z) return "hall";
     return x < -20 ? "bridge" : "courtyard";
   }
@@ -640,6 +738,7 @@ export class DaiLoAmTuWorld {
       [-10.5, -14, 0.9], [-10.5, -4, 0.9], [-10.5, 4, 0.9], [-10.5, 10, 0.9],
       [10.5, -14, 0.9], [10.5, -4, 0.9], [10.5, 4, 0.9], [10.5, 10, 0.9],
       [-5.5, -9.5, 1.0], [5.5, -9.5, 1.0], [0, ALTAR.z, 5.6],
+      [LIBRARY_TABLE.x, LIBRARY_TABLE.z, 2.2],
       [-3, 10, 1.0], [3, 10, 1.0], [-5.5, 19.5, 1.4], [5.5, 21.5, 4.4],
     ];
     obstacles.forEach(([ox, oz, r]) => {

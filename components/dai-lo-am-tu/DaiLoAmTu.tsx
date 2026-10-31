@@ -59,6 +59,7 @@ const ZONE_LABEL: Record<Zone, string> = {
   hall: "Đại Hùng Bảo Điện",
   courtyard: "Sân Ánh Trăng Bồ Đề",
   bridge: "Thềm Lăng Vân",
+  library: "Tàng Kinh Các",
 };
 
 export default function DaiLoAmTu() {
@@ -297,6 +298,9 @@ export default function DaiLoAmTu() {
           </button>
           <button type="button" aria-pressed={zone === "courtyard"} onClick={() => walkTo(0, 22)}>
             🌕 Sân Ánh Trăng
+          </button>
+          <button type="button" aria-pressed={zone === "library"} onClick={() => walkTo(26, 20)}>
+            📜 Tàng Kinh Các
           </button>
           <button type="button" aria-pressed={zone === "bridge"} onClick={() => walkTo(-22, 28)}>
             🌉 Thềm Lăng Vân

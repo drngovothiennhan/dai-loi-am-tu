@@ -132,6 +132,221 @@ export const SPRITE_MANIFEST = {
       "file": "decor/stone-lantern.webp",
       "height": 2.2,
       "aspect": 0.5124
+    },
+    "buddha-back": {
+      "file": "decor/buddha-back.webp",
+      "height": 3.6,
+      "aspect": 0.5083
+    },
+    "bodhisattva-red": {
+      "file": "decor/bodhisattva-red.webp",
+      "height": 3.6,
+      "aspect": 0.4889
+    },
+    "bodhisattva-staff": {
+      "file": "decor/bodhisattva-staff.webp",
+      "height": 3.6,
+      "aspect": 0.4111
+    },
+    "bodhisattva-back": {
+      "file": "decor/bodhisattva-back.webp",
+      "height": 3.4,
+      "aspect": 0.5059
+    },
+    "quan-am-white": {
+      "file": "decor/quan-am-white.webp",
+      "height": 3.8,
+      "aspect": 0.5421
+    },
+    "quan-am-blue": {
+      "file": "decor/quan-am-blue.webp",
+      "height": 3.8,
+      "aspect": 0.4816
+    },
+    "quan-am-cream": {
+      "file": "decor/quan-am-cream.webp",
+      "height": 3.8,
+      "aspect": 0.45
+    },
+    "quan-am-gold": {
+      "file": "decor/quan-am-gold.webp",
+      "height": 3.8,
+      "aspect": 0.4447
+    },
+    "dia-tang-red": {
+      "file": "decor/dia-tang-red.webp",
+      "height": 3.6,
+      "aspect": 0.4694
+    },
+    "buddha-a-di-da": {
+      "file": "decor/buddha-a-di-da.webp",
+      "height": 3.6,
+      "aspect": 0.5667
+    },
+    "di-lac": {
+      "file": "decor/di-lac.webp",
+      "height": 2.6,
+      "aspect": 0.7154
+    },
+    "guardian-blue-1": {
+      "file": "decor/guardian-blue-1.webp",
+      "height": 4.2,
+      "aspect": 0.5643
+    },
+    "guardian-blue-2": {
+      "file": "decor/guardian-blue-2.webp",
+      "height": 4.2,
+      "aspect": 0.6714
+    },
+    "guardian-blue-3": {
+      "file": "decor/guardian-blue-3.webp",
+      "height": 4.2,
+      "aspect": 0.4976
+    },
+    "hop-phap-1": {
+      "file": "decor/hop-phap-1.webp",
+      "height": 4.2,
+      "aspect": 0.7167
+    },
+    "hop-phap-2": {
+      "file": "decor/hop-phap-2.webp",
+      "height": 4.2,
+      "aspect": 0.6095
+    },
+    "hop-phap-3": {
+      "file": "decor/hop-phap-3.webp",
+      "height": 4.2,
+      "aspect": 0.4857
+    },
+    "dragon-gold": {
+      "file": "decor/dragon-gold.webp",
+      "height": 5.2,
+      "aspect": 0.9154
+    },
+    "dragon-red": {
+      "file": "decor/dragon-red.webp",
+      "height": 5.2,
+      "aspect": 0.8712
+    },
+    "dragon-blue": {
+      "file": "decor/dragon-blue.webp",
+      "height": 5.2,
+      "aspect": 0.7346
+    },
+    "dragon-white": {
+      "file": "decor/dragon-white.webp",
+      "height": 5.2,
+      "aspect": 0.7846
+    },
+    "dragon-jade": {
+      "file": "decor/dragon-jade.webp",
+      "height": 5.2,
+      "aspect": 0.9923
+    },
+    "phoenix": {
+      "file": "decor/phoenix.webp",
+      "height": 3,
+      "aspect": 1.07
+    },
+    "qilin-gold": {
+      "file": "decor/qilin-gold.webp",
+      "height": 2.6,
+      "aspect": 0.8115
+    },
+    "qilin-green": {
+      "file": "decor/qilin-green.webp",
+      "height": 2.6,
+      "aspect": 0.6885
+    },
+    "deer-white": {
+      "file": "decor/deer-white.webp",
+      "height": 2,
+      "aspect": 0.635
+    },
+    "elephant": {
+      "file": "decor/elephant.webp",
+      "height": 1.7,
+      "aspect": 0.8647
+    },
+    "tortoise": {
+      "file": "decor/tortoise.webp",
+      "height": 1.2,
+      "aspect": 0.9333
+    },
+    "temple-main": {
+      "file": "decor/temple-main.webp",
+      "height": 5.4,
+      "aspect": 1.5333
+    },
+    "gate-stone": {
+      "file": "decor/gate-stone.webp",
+      "height": 4.6,
+      "aspect": 1.0283
+    },
+    "gate-small": {
+      "file": "decor/gate-small.webp",
+      "height": 3.4,
+      "aspect": 1.3206
+    },
+    "pagoda-tall": {
+      "file": "decor/pagoda-tall.webp",
+      "height": 6.2,
+      "aspect": 0.9129
+    },
+    "apsara-1": {
+      "file": "decor/apsara-1.webp",
+      "height": 2.4,
+      "aspect": 0.5333
+    },
+    "apsara-3": {
+      "file": "decor/apsara-3.webp",
+      "height": 2.4,
+      "aspect": 0.7792
+    },
+    "lotus-white": {
+      "file": "decor/lotus-white.webp",
+      "height": 0.9,
+      "aspect": 1.1
+    },
+    "lotus-green": {
+      "file": "decor/lotus-green.webp",
+      "height": 1,
+      "aspect": 0.93
+    },
+    "cloud-gold": {
+      "file": "decor/cloud-gold.webp",
+      "height": 1.5,
+      "aspect": 1.7
+    },
+    "drum": {
+      "file": "decor/drum.webp",
+      "height": 1.2,
+      "aspect": 1.0167
+    },
+    "scroll-banner": {
+      "file": "decor/scroll-banner.webp",
+      "height": 2.8,
+      "aspect": 0.5429
+    },
+    "banner-red-1": {
+      "file": "decor/banner-red-1.webp",
+      "height": 3,
+      "aspect": 0.4733
+    },
+    "banner-red-2": {
+      "file": "decor/banner-red-2.webp",
+      "height": 3,
+      "aspect": 0.2933
+    },
+    "bell-stand": {
+      "file": "decor/bell-stand.webp",
+      "height": 1.5,
+      "aspect": 1.22
+    },
+    "lamp-small": {
+      "file": "decor/lamp-small.webp",
+      "height": 1.2,
+      "aspect": 0.9417
     }
   }
 } as const;

@@ -21,7 +21,7 @@ và cần duyệt trước khi thay đổi sản phẩm.
 | Thềm Lăng Vân | Điểm bắt đầu: bước lên cầu/thềm trước khi vào Linh Sơn | Khu vực `bridge`, bấm "Thềm Lăng Vân" |
 | Đại Hùng Bảo Điện | Điện chính, Như Lai ngự trên đài sen | Khu vực `hall`, có tượng Phật, rồng, đèn lồng, lư hương |
 | Sân Ánh Trăng Bồ Đề | Sân sau điện: cây Bồ Đề, hồ sen | Khu vực `courtyard`, tu tập bằng múa thiền (phím 1) |
-| Tàng Kinh Các | Nơi cất kinh: nhận kinh không chữ, sau đó kinh có chữ | Bảng "Tàng kinh" (phím 5), chưa có phòng 3D |
+| Tàng Kinh Các | Nơi cất kinh: nhận kinh không chữ, sau đó kinh có chữ | Phòng 3D phía đông sân (kệ sách, bàn đọc, cuộn kinh). Bảng "Tàng kinh" (phím 5) vẫn mở từ mọi khu vực |
 
 ## 3. Hành trình 81 nạn
 
@@ -52,14 +52,23 @@ và cần duyệt trước khi thay đổi sản phẩm.
 | `asset-sources/v3/source/generated_v3_overview.png` | Ảnh tổng quan: chú tiểu, phật tử, tượng Phật và Bồ Tát, hộ pháp, rồng, thú linh, cổng, sen, cây, mây, hiệu ứng, đèn | Nền đục gradient. Chỉ dùng làm tài liệu tham chiếu. Chưa tách được vật thể sạch |
 | `asset-sources/v3/validation/contact_sheet.jpg` | Bảng kiểm tra 40 frame | Tài liệu, không dùng trong game |
 | `asset-sources/decor.png` (bộ trước) | Tượng Phật, rồng, đèn đứng, lư hương, sen, cây, đèn đá | Dùng cho cảnh; tách bằng `scripts/build-assets.mjs` |
+| `asset-sources/overview-cut/` | 58 vật thể cắt từ ảnh tổng quan bằng GrabCut (`scripts/cut_overview.py`) | 53 vật thể dùng trong cảnh (xem bên dưới) |
 
-Vật thể của tổng quan chưa có trong game: Bồ Tát, hộ pháp, rồng khác, thú linh, cổng và điện chùa, mây, hiệu ứng.
-Lý do: nền của tổng quan đục, cần tách nền trước. Đây là việc tiếp theo nếu được duyệt.
+Đang đặt trong cảnh (từ tổng quan): Quan Âm đứng hai bên Phật, Bồ Tát đỏ-vàng và xanh nơi hộ pháp,
+hộ pháp xanh hai bên cửa điện, kỳ lân trước điện, rồng đỏ trên cột phải, hươu, voi, rùa ở sân, cổng đá và chùa chính
+ở thềm, tháp, thiên nữ trên mây, mây vàng, sen trắng và sen xanh, trống, cờ phướn, cuộn kinh, chuông và đèn.
+
+Đã cắt được nhưng chưa đặt vào cảnh: Phật A Di Đà, Phật Địa Tạng, Di Lặc, rồng xanh, rồng trắng, rồng ngọc, phượng, cổng nhỏ, bộ hộ pháp còn lại.
+Chúng nằm sẵn trong `asset-sources/overview-cut/` và chỉ cần thêm một dòng `addBillboard`.
+
+Chưa dùng: cây hồng và cây xanh, mây xanh, phướn vàng, đèn đứng nhỏ, bộ đèn treo. Cắt chưa sạch
+(khung sai, hoặc lẫn nền), nên bỏ qua thay vì đưa vào cảnh khi còn lỗi.
 
 ## 6. Quyết định cần chủ dự án duyệt
 
 1. Dùng cụm "81 nạn" và đặt 9 cảnh giới thành 9 chương (đề xuất ở mục 3).
 2. Thêm "Tàng Kinh Các" thành phòng 3D thay vì bảng (đề xuất, chưa làm).
 3. Tách nền ảnh tổng quan để đưa các Bồ Tát, hộ pháp, rồng và cổng vào cảnh (đề xuất, chưa làm).
-4. Bổ sung frame chắp tay, múa và quỳ/lạy riêng cho phật tử (cần ảnh mới).
+4. Phật tử chưa có frame chắp tay, múa, quỳ và lạy riêng. Cần ảnh mới có nền trong suốt, cỡ 256px.
+   Ảnh tổng quan có các tư thế này nhưng quá nhỏ (cao khoảng 70px) và nằm trên nền đục, nên chưa dùng được.
 5. Bộ lời nhắc 12 dòng vẫn chờ bộ 30 quẻ chính thức.
