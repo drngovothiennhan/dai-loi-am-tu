@@ -1,0 +1,362 @@
+.page {
+  --bg-twilight-top: #161936;
+  --wood-floor-dark: #3b1c11;
+  --gold-buddha: #ffbf3c;
+  --ui-glass-dark: rgba(24, 14, 10, 0.82);
+  --ui-border-gold: rgba(243, 194, 107, 0.42);
+  --text-parchment: #f7ebd9;
+  --text-gold: #f5c469;
+  --text-muted: #c9b79b;
+
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg-twilight-top);
+  color: var(--text-parchment);
+  font-family: "Be Vietnam Pro", "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+}
+
+.stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.topLeft,
+.topRight,
+.bottomBar,
+.panel,
+.stop,
+.toasts,
+.fallback {
+  position: absolute;
+  z-index: 2;
+  background: var(--ui-glass-dark);
+  border: 1px solid var(--ui-border-gold);
+  border-radius: 14px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.topLeft {
+  top: 12px;
+  left: 12px;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 12px 14px;
+}
+
+.back {
+  color: var(--text-gold);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.title {
+  margin: 6px 0 0;
+  font-family: "Noto Serif", "Playfair Display", Georgia, serif;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.title small {
+  display: block;
+  margin-top: 2px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.lotus {
+  margin-right: 4px;
+}
+
+.zones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.zones button,
+.utility button,
+.bottomBar button,
+.stop,
+.close,
+.row button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-parchment);
+  background: rgba(255, 191, 60, 0.08);
+  border: 1px solid var(--ui-border-gold);
+  border-radius: 10px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.zones button[aria-pressed="true"],
+.bottomBar button[aria-pressed="true"] {
+  background: rgba(255, 191, 60, 0.28);
+  color: #fff6dd;
+}
+
+.zones button:focus-visible,
+.bottomBar button:focus-visible,
+.utility button:focus-visible,
+.stop:focus-visible,
+.close:focus-visible,
+.row button:focus-visible,
+.beadPad:focus-visible {
+  outline: 2px solid var(--text-gold);
+  outline-offset: 2px;
+}
+
+.zoneNow {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.topRight {
+  top: 12px;
+  right: 12px;
+  width: min(280px, calc(100vw - 24px));
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.topRight p {
+  margin: 0 0 4px;
+}
+
+.name {
+  color: var(--text-gold);
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.utility {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.bottomBar {
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  width: min(760px, calc(100vw - 24px));
+}
+
+.bottomBar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 130px;
+  justify-content: center;
+}
+
+.bottomBar kbd {
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--gold-buddha);
+  border: 1px solid var(--ui-border-gold);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.stop {
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+}
+
+.panel {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  padding: 18px;
+  z-index: 3;
+}
+
+.panel h2 {
+  margin: 0 0 10px;
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: 19px;
+  color: var(--text-gold);
+}
+
+.panel p {
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 10px;
+}
+
+.beadPad {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  margin: 8px 0 12px;
+  border: 1px dashed var(--ui-border-gold);
+  border-radius: 14px;
+  background: radial-gradient(circle, rgba(255, 191, 60, 0.16), transparent 70%);
+  color: var(--text-gold);
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.close {
+  margin-top: 6px;
+}
+
+.progressRow {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.bar {
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #e67e22, var(--gold-buddha));
+}
+
+.scroll {
+  margin: 12px 0;
+  padding: 14px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255, 220, 130, 0.14), rgba(255, 220, 130, 0.04));
+  border: 1px solid var(--ui-border-gold);
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.slider {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.slider input {
+  width: 100%;
+  accent-color: var(--gold-buddha);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.toasts {
+  top: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(460px, calc(100vw - 24px));
+  padding: 0;
+  background: none;
+  border: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  pointer-events: none;
+}
+
+.toasts p {
+  margin: 0 0 6px;
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-parchment);
+  background: var(--ui-glass-dark);
+  border: 1px solid var(--ui-border-gold);
+  border-radius: 10px;
+}
+
+.fallback {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px));
+  padding: 16px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 640px) {
+  .topRight {
+    top: auto;
+    bottom: 150px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    font-size: 12px;
+  }
+
+  .topLeft {
+    max-width: calc(100vw - 24px);
+  }
+
+  .title {
+    font-size: 17px;
+  }
+
+  .bottomBar button {
+    flex: 1 1 calc(50% - 6px);
+    font-size: 12px;
+  }
+
+  .stop {
+    bottom: 230px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page * {
+    transition: none !important;
+  }
+}
