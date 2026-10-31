@@ -18,10 +18,30 @@ import {
   type Progress,
 } from "@/lib/progress";
 import { DEFAULT_MIX, loadMix, saveMix, ZenAudio, type MixerSettings } from "./audio";
-import { DaiLoAmTuWorld, type Pose, type Zone } from "./world";
+import { DaiLoAmTuWorld, type CharacterArt, type DecorArt, type Pose, type Zone } from "./world";
+import { CHARACTER_IDS, SPRITE_MANIFEST, type CharacterId } from "@/lib/sprite-manifest";
 import styles from "./DaiLoAmTu.module.css";
 
 type Panel = "beads" | "mo" | "scroll" | "audio" | null;
+
+const CHARACTER_KEY = "dai-lo-am-tu:character:v1";
+
+function readCharacter(): CharacterId {
+  try {
+    const saved = window.localStorage.getItem(CHARACTER_KEY);
+    if (saved && (CHARACTER_IDS as string[]).includes(saved)) return saved as CharacterId;
+  } catch {
+    // Storage blocked: fall back to the first character.
+  }
+  return CHARACTER_IDS[0];
+}
+
+const DECOR_ART = SPRITE_MANIFEST.decor as unknown as Record<string, DecorArt>;
+
+function artFor(id: CharacterId): CharacterArt {
+  const c = SPRITE_MANIFEST.characters[id];
+  return { file: c.file, frames: c.frames, poses: c.poses as unknown as Record<string, number> };
+}
 
 interface Toast {
   id: number;
@@ -51,6 +71,8 @@ export default function DaiLoAmTu() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [webglOk, setWebglOk] = useState(true);
   const [pointerStartY, setPointerStartY] = useState<number | null>(null);
+  const [character, setCharacter] = useState<CharacterId>(CHARACTER_IDS[0]);
+  const [artOk, setArtOk] = useState(true);
 
   const addToast = useCallback((text: string) => {
     const id = ++toastId.current;
@@ -64,6 +86,7 @@ export default function DaiLoAmTu() {
     if (!loaded.name) loaded.name = randomDharmaName();
     setProgress(loaded);
     setMix(loadMix());
+    setCharacter(readCharacter());
     setReady(true);
   }, []);
 
@@ -85,7 +108,7 @@ export default function DaiLoAmTu() {
     if (!container) return;
     let world: DaiLoAmTuWorld | null = null;
     try {
-      world = new DaiLoAmTuWorld(container, {
+      world = new DaiLoAmTuWorld(container, artFor(readCharacter()), DECOR_ART, {
         onPoseChange: (next) => setPose(next),
         onZoneChange: (next) => setZone(next),
         onSeatChange: (id) => setSeated(id !== null),
@@ -94,6 +117,7 @@ export default function DaiLoAmTu() {
           audioRef.current?.playBell();
         },
         onSeatedSecond: () => setProgress((p) => ({ ...p, meditationSeconds: p.meditationSeconds + 1 })),
+        onArtError: () => setArtOk(false),
       });
     } catch {
       setWebglOk(false);
@@ -113,6 +137,17 @@ export default function DaiLoAmTu() {
   }, []);
 
   const ensureAudio = () => audioRef.current?.ensure();
+
+  const chooseCharacter = (id: CharacterId) => {
+    setCharacter(id);
+    setArtOk(true);
+    worldRef.current?.setCharacter(artFor(id));
+    try {
+      window.localStorage.setItem(CHARACTER_KEY, id);
+    } catch {
+      // Storage blocked: the choice still applies for this visit.
+    }
+  };
 
   const isCourtyard = zone !== "hall";
 
@@ -264,6 +299,19 @@ export default function DaiLoAmTu() {
           </button>
         </nav>
         <p className={styles.zoneNow}>Đang ở: {ZONE_LABEL[zone]}</p>
+        <div className={styles.characters} role="group" aria-label="Chọn nhân vật">
+          {CHARACTER_IDS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={character === id}
+              onClick={() => chooseCharacter(id)}
+            >
+              {SPRITE_MANIFEST.characters[id].label}
+            </button>
+          ))}
+        </div>
+        {!artOk && <p className={styles.zoneNow}>Không tải được hình nhân vật.</p>}
       </header>
 
       <aside className={styles.topRight} aria-label="Thông tin tu tập">

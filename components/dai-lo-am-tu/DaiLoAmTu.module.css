@@ -360,3 +360,31 @@
     transition: none !important;
   }
 }
+
+.characters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.characters button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-parchment);
+  background: rgba(255, 191, 60, 0.08);
+  border: 1px solid var(--ui-border-gold);
+  border-radius: 10px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.characters button[aria-pressed="true"] {
+  background: rgba(255, 191, 60, 0.28);
+  color: #fff6dd;
+}
+
+.characters button:focus-visible {
+  outline: 2px solid var(--text-gold);
+  outline-offset: 2px;
+}

@@ -1,5 +1,6 @@
 // Procedural 3D world for "Đại Lôi Âm Tự". No external model files: everything is built from Three.js
-// primitives so the page opens without downloads. Only the player's own monk is shown; there are no
+// primitives so the page opens without downloads. The character itself is a camera-facing sprite cut
+// from the project artwork (see scripts/build-sprites.mjs). Only the player's own character is shown; there are no
 // simulated companions.
 
 import * as THREE from "three";
@@ -14,6 +15,7 @@ export interface WorldEvents {
   onSeatChange?: (cushionId: number | null) => void;
   onBowComplete?: () => void;
   onSeatedSecond?: () => void;
+  onArtError?: () => void;
 }
 
 const BOW_CYCLE = 4.5; // seconds for one full prostration (Ngũ thể đầu địa)
@@ -24,42 +26,29 @@ const HALL_DOOR_Z = 12;
 const BOUNDS = { minX: -30, maxX: 20, minZ: -16, maxZ: 38 };
 
 // Keyframes for one bow cycle: [phase 0..1, rootY, upperX (bend forward), headX, armX, legX].
-const BOW_KEYS: ReadonlyArray<readonly [number, number, number, number, number, number]> = [
-  [0.0, 0, 0, 0.1, -1.0, 0],
-  [0.18, 0, 0, 0.1, -1.0, 0],
-  [0.3, 0.12, 0, 0.1, -1.0, -1.3],
-  [0.48, 0.12, 1.2, 0.6, -1.4, -1.3],
-  [0.6, 0.12, 1.2, 0.6, -1.4, -1.3],
-  [0.8, 0.12, 0, 0.1, -1.0, -1.3],
-  [0.92, 0, 0, 0.1, -1.0, 0],
-  [1.0, 0, 0, 0.1, -1.0, 0],
-];
-
-interface PoseValues {
-  rootY: number;
-  upperX: number;
-  headX: number;
-  armL: number;
-  armR: number;
-  armZL: number;
-  armZR: number;
-  legL: number;
-  legR: number;
-}
-
-const REST: PoseValues = {
-  rootY: 0, upperX: 0, headX: 0, armL: 0.05, armR: 0.05, armZL: 0.08, armZR: -0.08, legL: 0, legR: 0,
+// Which drawing to show for each state. A character may not have every pose, so each one falls back
+// along this chain until the atlas has a frame for it.
+const POSE_FALLBACK: Record<string, string[]> = {
+  idle: ["idle"],
+  walk1: ["walk1", "idle"],
+  walk2: ["walk2", "walk1", "idle"],
+  pray: ["pray", "idle"],
+  sit: ["sit", "kneel", "idle"],
+  kneel: ["kneel", "prostrate", "pray", "idle"],
+  prostrate: ["prostrate", "kneel", "pray", "idle"],
+  dance: ["dance", "idle"],
 };
 
-interface Monk {
-  root: THREE.Group;
-  upper: THREE.Group;
-  head: THREE.Group;
-  armL: THREE.Group;
-  armR: THREE.Group;
-  legL: THREE.Group;
-  legR: THREE.Group;
-  eyes: THREE.Mesh[];
+export interface DecorArt {
+  file: string;
+  height: number;
+  aspect: number;
+}
+
+export interface CharacterArt {
+  file: string;
+  frames: number;
+  poses: Record<string, number>;
 }
 
 interface Cushion {
@@ -73,96 +62,20 @@ function lerp(a: number, b: number, k: number): number {
   return a + (b - a) * k;
 }
 
-function sampleBowKeys(p: number): PoseValues {
-  const keys = BOW_KEYS;
-  let i = 0;
-  while (i < keys.length - 2 && p > keys[i + 1][0]) i++;
-  const [p0, ...a] = keys[i];
-  const [p1, ...b] = keys[i + 1];
-  const k = p1 === p0 ? 0 : (p - p0) / (p1 - p0);
-  return {
-    ...REST,
-    rootY: lerp(a[0], b[0], k),
-    upperX: lerp(a[1], b[1], k),
-    headX: lerp(a[2], b[2], k),
-    armL: lerp(a[3], b[3], k),
-    armR: lerp(a[3], b[3], k),
-    legL: lerp(a[4], b[4], k),
-    legR: lerp(a[4], b[4], k),
-  };
-}
-
-function buildMonk(): Monk {
-  const skin = new THREE.MeshStandardMaterial({ color: 0xf5cbb7, roughness: 0.7 });
-  const robe = new THREE.MeshStandardMaterial({ color: 0xe67e22, roughness: 0.8 });
-  const robeDark = new THREE.MeshStandardMaterial({ color: 0x784b2a, roughness: 0.85 });
-  const shoe = new THREE.MeshStandardMaterial({ color: 0x2b1a10, roughness: 0.9 });
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x1a1210, roughness: 0.5 });
-  const cheek = new THREE.MeshStandardMaterial({ color: 0xf08c7a, roughness: 0.8 });
-
-  const root = new THREE.Group();
-  const upper = new THREE.Group();
-  upper.position.y = 0.5;
-  root.add(upper);
-
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.42, 0.78, 18), robe);
-  torso.position.y = 0.39;
-  upper.add(torso);
-  const sash = new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.12, 18), robeDark);
-  sash.position.y = 0.2;
-  upper.add(sash);
-
-  const head = new THREE.Group();
-  head.position.y = 1.0;
-  upper.add(head);
-  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 24), skin);
-  head.add(skull);
-
-  const eyeGeo = new THREE.SphereGeometry(0.05, 10, 10);
-  const eyes: THREE.Mesh[] = [];
-  [-0.14, 0.14].forEach((x) => {
-    const eye = new THREE.Mesh(eyeGeo, eyeMat);
-    eye.position.set(x, 0.04, 0.37);
-    head.add(eye);
-    eyes.push(eye);
-    const c = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 10), cheek);
-    c.position.set(x * 1.6, -0.08, 0.33);
-    head.add(c);
-  });
-
-  const armGeo = new THREE.CapsuleGeometry(0.1, 0.4, 4, 10);
-  armGeo.translate(0, -0.27, 0);
-  const makeArm = (side: number) => {
-    const pivot = new THREE.Group();
-    pivot.position.set(side * 0.42, 0.7, 0);
-    const arm = new THREE.Mesh(armGeo, robe);
-    pivot.add(arm);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), skin);
-    hand.position.y = -0.55;
-    pivot.add(hand);
-    upper.add(pivot);
-    return pivot;
-  };
-  const armL = makeArm(-1);
-  const armR = makeArm(1);
-
-  const legGeo = new THREE.CapsuleGeometry(0.13, 0.28, 4, 10);
-  legGeo.translate(0, -0.2, 0);
-  const makeLeg = (side: number) => {
-    const pivot = new THREE.Group();
-    pivot.position.set(side * 0.16, 0.5, 0);
-    const leg = new THREE.Mesh(legGeo, robeDark);
-    pivot.add(leg);
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.3), shoe);
-    foot.position.set(0, -0.44, 0.06);
-    pivot.add(foot);
-    root.add(pivot);
-    return pivot;
-  };
-  const legL = makeLeg(-1);
-  const legR = makeLeg(1);
-
-  return { root, upper, head, armL, armR, legL, legR, eyes };
+function makeShadowTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const g = canvas.getContext("2d");
+  if (g) {
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, "rgba(0,0,0,0.5)");
+    grad.addColorStop(0.6, "rgba(0,0,0,0.22)");
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+  }
+  return new THREE.CanvasTexture(canvas);
 }
 
 function makeCushionTexture(): THREE.CanvasTexture {
@@ -227,8 +140,15 @@ export class DaiLoAmTuWorld {
   private cushions: Cushion[] = [];
   private seatRing: THREE.Mesh;
   private seatedId: number | null = null;
-  private monk: Monk;
-  private pose: PoseValues = { ...REST };
+  private actor = new THREE.Group();
+  private sprite: THREE.Mesh;
+  private spriteMat: THREE.MeshBasicMaterial;
+  private spriteTex: THREE.Texture | null = null;
+  private art: CharacterArt;
+  private decor: Record<string, DecorArt>;
+  private billboards: THREE.Mesh[] = [];
+  private facing = 1;
+  private spriteH = 1.95;
   private target: THREE.Vector3 | null = null;
   private afterWalk: (() => void) | null = null;
   private mode: "stand" | "bow" | "dance" = "stand";
@@ -237,18 +157,17 @@ export class DaiLoAmTuWorld {
   private gasshoT = 0;
   private walkPhase = 0;
   private meditateAcc = 0;
-  private blinkT = 0;
   private zone: Zone = "hall";
   private lastPose: Pose = "stand";
-  private cameraGoal = { pos: new THREE.Vector3(), look: new THREE.Vector3() };
+  private cameraOffset = new THREE.Vector3(0, 6.5, 11);
   private cameraTween = false;
+  private lookAt = new THREE.Vector3();
   private keyDir = new THREE.Vector2();
   private keysDown = new Set<string>();
   private pointerDown: { x: number; y: number } | null = null;
-  private lanterns: THREE.Object3D[] = [];
+  private lanterns: THREE.PointLight[] = [];
   private smoke: THREE.Points;
   private smokeBase: Float32Array;
-  private foliage: THREE.Object3D;
   private clouds: THREE.Object3D;
   private moon: THREE.Mesh;
   private hemi: THREE.HemisphereLight;
@@ -272,9 +191,16 @@ export class DaiLoAmTuWorld {
     this.handleClick(e);
   };
 
-  constructor(container: HTMLElement, events: WorldEvents = {}) {
+  constructor(
+    container: HTMLElement,
+    art: CharacterArt,
+    decor: Record<string, DecorArt>,
+    events: WorldEvents = {},
+  ) {
     this.container = container;
     this.events = events;
+    this.art = art;
+    this.decor = decor;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -287,7 +213,6 @@ export class DaiLoAmTuWorld {
     this.controls.maxPolarAngle = Math.PI * 0.49;
     this.controls.minDistance = 4;
     this.controls.maxDistance = 90;
-    this.applyCameraPreset("hall", true);
 
     this.scene.background = this.skyDay.clone();
     this.scene.fog = new THREE.Fog(this.fogDay.clone(), 60, 170);
@@ -301,10 +226,27 @@ export class DaiLoAmTuWorld {
     this.buildHall();
     this.buildCushions();
     this.buildCourtyard();
-    this.monk = buildMonk();
-    this.scene.add(this.monk.root);
-    this.monk.root.position.set(0, 0, 3);
-    this.monk.root.rotation.y = Math.PI;
+    this.spriteMat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      alphaTest: 0.35,
+      side: THREE.DoubleSide,
+      depthWrite: true,
+      toneMapped: false,
+    });
+    this.sprite = new THREE.Mesh(new THREE.PlaneGeometry(this.spriteH, this.spriteH), this.spriteMat);
+    this.sprite.position.y = this.spriteH / 2;
+    this.actor.add(this.sprite);
+    const shadow = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.95, 0.6),
+      new THREE.MeshBasicMaterial({ map: makeShadowTexture(), transparent: true, depthWrite: false, opacity: 0.85 }),
+    );
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = 0.03;
+    this.actor.add(shadow);
+    this.scene.add(this.actor);
+    this.actor.position.set(0, 0, 5);
+    this.setCharacter(art);
+    this.applyCameraPreset("hall", true);
 
     this.seatRing = new THREE.Mesh(
       new THREE.TorusGeometry(0.72, 0.035, 8, 40),
@@ -321,7 +263,6 @@ export class DaiLoAmTuWorld {
     const smokeData = this.buildSmoke();
     this.smoke = smokeData.points;
     this.smokeBase = smokeData.base;
-    this.foliage = this.courtyardFoliage;
     this.setDay(true);
 
     window.addEventListener("resize", this.onResize);
@@ -398,7 +339,29 @@ export class DaiLoAmTuWorld {
 
   // ---- building ------------------------------------------------------------------------------
 
-  private courtyardFoliage: THREE.Object3D = new THREE.Group();
+
+  // A piece of painted scenery standing in the 3D room. The plane is sized from the artwork's own
+  // proportions and anchored at its foot, then turned to face the camera each frame.
+  private addBillboard(name: string, x: number, y: number, z: number, opts: { scale?: number; faceCamera?: boolean } = {}) {
+    const art = this.decor[name];
+    if (!art) return null;
+    const scale = opts.scale ?? 1;
+    const h = art.height * scale;
+    const w = h * art.aspect;
+    const mat = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, toneMapped: false });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    mesh.position.set(x, y + h / 2, z);
+    this.scene.add(mesh);
+    if (opts.faceCamera !== false) this.billboards.push(mesh);
+    new THREE.TextureLoader().load(art.file, (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      mat.map = tex;
+      mat.needsUpdate = true;
+    }, undefined, () => this.events.onArtError?.());
+    return mesh;
+  }
 
   private stone(color: number, rough = 0.8): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: 0.05 });
@@ -433,89 +396,38 @@ export class DaiLoAmTuWorld {
       });
     });
 
-    const gold = new THREE.MeshStandardMaterial({ color: 0xffc13b, metalness: 0.7, roughness: 0.3, emissive: 0x6b4300, emissiveIntensity: 0.4 });
     [-5.5, 5.5].forEach((x) => {
       const col = this.addMesh(new THREE.CylinderGeometry(0.65, 0.7, 13, 24), wood);
       col.position.set(x, 6.5, -9.5);
-      const points: THREE.Vector3[] = [];
-      for (let i = 0; i <= 80; i++) {
-        const t = i / 80;
-        const a = t * Math.PI * 6 * (x < 0 ? 1 : -1);
-        points.push(new THREE.Vector3(x + Math.cos(a) * 0.85, 0.8 + t * 10.5, -9.5 + Math.sin(a) * 0.85));
-      }
-      const curve = new THREE.CatmullRomCurve3(points);
-      this.addMesh(new THREE.TubeGeometry(curve, 80, 0.18, 12, false), gold);
-      const head = this.addMesh(new THREE.ConeGeometry(0.4, 1, 10), gold);
-      head.position.set(x, 11.6, -9.5);
-      head.rotation.x = Math.PI;
+      this.addBillboard("dragon", x, 1.2, -8.6);
     });
 
     // Altar: octagonal base, golden lotus, seated Buddha with mandorla.
     const base = this.addMesh(new THREE.CylinderGeometry(4.8, 5.2, 1.4, 8), wood);
     base.position.set(0, 0.7, ALTAR.z);
-    const lotusProfile = [
-      new THREE.Vector2(0.01, 0), new THREE.Vector2(1.8, 0.2), new THREE.Vector2(2.4, 0.6),
-      new THREE.Vector2(1.2, 1.0), new THREE.Vector2(0.01, 1.1),
-    ];
-    const lotus = this.addMesh(
-      new THREE.LatheGeometry(lotusProfile, 32),
-      new THREE.MeshStandardMaterial({ color: 0xffbf3c, emissive: 0xff9800, emissiveIntensity: 0.45, metalness: 0.5, roughness: 0.35 }),
-    );
-    lotus.position.set(0, 1.4, ALTAR.z);
-    const buddha = new THREE.Group();
-    buddha.position.set(0, 1.4, ALTAR.z);
-    this.scene.add(buddha);
-    const body = this.addMesh(new THREE.CylinderGeometry(1.0, 1.3, 2.4, 20), gold, buddha);
-    body.position.y = 1.5;
-    const bust = this.addMesh(new THREE.SphereGeometry(0.7, 24, 24), gold, buddha);
-    bust.position.y = 3.3;
-    const ush = this.addMesh(new THREE.SphereGeometry(0.22, 12, 12), gold, buddha);
-    ush.position.y = 4.1;
-    const mandorla = this.addMesh(
-      new THREE.RingGeometry(2.6, 3.3, 48),
-      new THREE.MeshBasicMaterial({ color: 0xffd76b, side: THREE.DoubleSide, transparent: true, opacity: 0.85 }),
-      buddha,
-    );
-    mandorla.position.set(0, 2.6, -0.6);
+    // The statue is painted scenery rather than geometry: a modelled Buddha built from primitives
+    // reads as a bell, and this artwork is the real thing.
+    this.addBillboard("buddha", 0, 1.4, ALTAR.z + 0.2);
 
     const altarLight = new THREE.PointLight(0xffaa33, 40, 22, 1.5);
     altarLight.position.set(0, 2.6, ALTAR.z + 3);
     this.scene.add(altarLight);
 
-    // Lanterns hung from the roof; four of them cast warm light.
-    const lanternGeo = new THREE.CylinderGeometry(0.45, 0.55, 0.9, 6);
-    const lanternMat = new THREE.MeshStandardMaterial({ color: 0xff7722, emissive: 0xff5511, emissiveIntensity: 0.9 });
-    const lanternPositions: Array<[number, number, number]> = [
-      [-8, 7.5, -8], [8, 7.5, -8], [-8, 7.5, 6], [8, 7.5, 6], [-3, 8, 2], [3, 8, 2],
-    ];
-    lanternPositions.forEach(([x, y, z], i) => {
-      const group = new THREE.Group();
-      group.position.set(x, y, z);
-      this.scene.add(group);
-      const cord = this.addMesh(new THREE.CylinderGeometry(0.02, 0.02, 3, 4), this.stone(0x2b1a10), group);
-      cord.position.y = 1.9;
-      this.addMesh(lanternGeo, lanternMat, group);
-      this.lanterns.push(group);
-      if (i < 4) {
-        const light = new THREE.PointLight(0xff7722, 18, 12, 1.5);
-        light.position.set(0, -0.2, 0);
-        group.add(light);
-      }
-    });
-
-    // Incense burners in front of the hall entrance.
-    [-3, 3].forEach((x) => {
-      const bronze = this.stone(0x9a7b3c, 0.4);
-      const bowl = this.addMesh(new THREE.CylinderGeometry(0.7, 0.5, 0.7, 20), bronze);
-      bowl.position.set(x, 0.35, 10);
-      const rim = this.addMesh(new THREE.TorusGeometry(0.7, 0.06, 8, 24), bronze);
-      rim.position.set(x, 0.72, 10);
-      rim.rotation.x = Math.PI / 2;
-      [-0.25, 0, 0.25].forEach((dx) => {
-        const stick = this.addMesh(new THREE.CylinderGeometry(0.02, 0.02, 0.9, 4), this.stone(0x8b2a1a));
-        stick.position.set(x + dx, 1.2, 10);
+    // Standing lamps down both sides of the aisle, each with a warm point light.
+    [-7.5, 7.5].forEach((x) => {
+      [-11, -5, 1, 7].forEach((z, i) => {
+        this.addBillboard("lantern", x, 0, z);
+        if (i % 2 === 0) {
+          const light = new THREE.PointLight(0xff8a33, 14, 13, 1.6);
+          light.position.set(x, 2.1, z);
+          this.scene.add(light);
+          this.lanterns.push(light);
+        }
       });
     });
+
+    // Incense burners in front of the hall entrance; the smoke itself is particles (see buildSmoke).
+    [-3, 3].forEach((x) => this.addBillboard("burner", x, 0, 10));
   }
 
   private buildCushions(): void {
@@ -544,37 +456,9 @@ export class DaiLoAmTuWorld {
     courtyard.position.set(0, -0.3, 25);
     this.ground.push(courtyard);
 
-    // Bodhi tree: trunk plus clusters of golden leaves that glow.
-    const treeRoot = new THREE.Group();
-    treeRoot.position.set(-5.5, 0, 19.5);
-    this.scene.add(treeRoot);
-    const bark = this.stone(0x6e4a2a, 0.9);
-    this.addMesh(new THREE.CylinderGeometry(0.35, 0.7, 4.2, 10), bark, treeRoot).position.y = 2.1;
-    for (let i = 0; i < 6; i++) {
-      const branch = this.addMesh(new THREE.CylinderGeometry(0.08, 0.16, 2.4, 6), bark, treeRoot);
-      const a = (i / 6) * Math.PI * 2;
-      branch.position.set(Math.cos(a) * 0.8, 4.6, Math.sin(a) * 0.8);
-      branch.rotation.set(Math.sin(a) * 0.6, 0, -Math.cos(a) * 0.6);
-    }
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0xffcc33, emissive: 0xffcc33, emissiveIntensity: 0.65, roughness: 0.5 });
-    const foliage = new THREE.Group();
-    foliage.position.y = 5.2;
-    treeRoot.add(foliage);
-    const leafGeo = new THREE.IcosahedronGeometry(0.6, 0);
-    let seed = 7;
-    const rand = () => {
-      seed = (seed * 16807) % 2147483647;
-      return seed / 2147483647;
-    };
-    for (let i = 0; i < 60; i++) {
-      const leaf = new THREE.Mesh(leafGeo, leafMat);
-      const r = 1.2 + rand() * 2.6;
-      const a = rand() * Math.PI * 2;
-      leaf.position.set(Math.cos(a) * r, rand() * 2.2 + 0.4, Math.sin(a) * r * 0.8);
-      leaf.scale.setScalar(0.6 + rand() * 0.5);
-      foliage.add(leaf);
-    }
-    this.courtyardFoliage = foliage;
+    // The sacred tree and the stone lanterns are painted scenery.
+    this.addBillboard("tree", -5.5, 0, 19.5);
+    [-11, 10.5].forEach((x) => this.addBillboard("stone-lantern", x, 0, 16));
 
     // Lotus pond with pink glowing blossoms.
     const pond = this.addMesh(
@@ -588,10 +472,8 @@ export class DaiLoAmTuWorld {
       pad.rotation.x = -Math.PI / 2;
       pad.position.set(5.5 + Math.cos(i) * 2.6, 0.13, 21.5 + Math.sin(i * 1.7) * 2.2);
     }
-    const bloomMat = new THREE.MeshStandardMaterial({ color: 0xff66aa, emissive: 0xff66aa, emissiveIntensity: 0.7 });
     for (let i = 0; i < 6; i++) {
-      const bloom = this.addMesh(new THREE.ConeGeometry(0.22, 0.45, 8), bloomMat);
-      bloom.position.set(5.5 + Math.cos(i) * 2.6, 0.3, 21.5 + Math.sin(i * 1.7) * 2.2);
+      this.addBillboard("lotus", 5.5 + Math.cos(i) * 2.6, 0.1, 21.5 + Math.sin(i * 1.7) * 2.2);
     }
 
     // Stone bridge across the mist to the west.
@@ -688,18 +570,19 @@ export class DaiLoAmTuWorld {
     this.camera.updateProjectionMatrix();
   }
 
+  // The camera orbits the character rather than a fixed point in the room, so the character is always
+  // the subject and never ends up behind the action bar. Each zone only changes how far back it sits.
   private applyCameraPreset(zone: Zone, immediate: boolean): void {
-    const presets: Record<Zone, [number, number, number, number, number, number]> = {
-      hall: [0, 8.5, 13.5, 0, 3, -8],
-      courtyard: [0, 10, 46, 0, 1, 20],
-      bridge: [-18, 8, 42, -24, 0, 27],
+    const offsets: Record<Zone, [number, number, number]> = {
+      hall: [0, 8.5, 17],
+      courtyard: [0, 9, 19],
+      bridge: [0, 8, 17],
     };
-    const [px, py, pz, lx, ly, lz] = presets[zone];
-    this.cameraGoal.pos.set(px, py, pz);
-    this.cameraGoal.look.set(lx, ly, lz);
+    const [ox, oy, oz] = offsets[zone];
+    this.cameraOffset.set(ox, oy, oz);
     if (immediate) {
-      this.camera.position.copy(this.cameraGoal.pos);
-      this.controls.target.copy(this.cameraGoal.look);
+      this.camera.position.copy(this.actor.position).add(this.cameraOffset);
+      this.controls.target.copy(this.actor.position).add(new THREE.Vector3(0, 2.4, -4));
       this.cameraTween = false;
     } else {
       this.cameraTween = true;
@@ -733,8 +616,7 @@ export class DaiLoAmTuWorld {
   private sitOn(cushion: Cushion): void {
     this.afterWalk = null;
     this.seatedId = cushion.id;
-    this.monk.root.position.set(cushion.x, 0, cushion.z);
-    this.monk.root.rotation.y = Math.atan2(ALTAR.x - cushion.x, ALTAR.z - cushion.z);
+    this.actor.position.set(cushion.x, 0, cushion.z);
     this.seatRing.position.set(cushion.x, 0.24, cushion.z);
     this.seatRing.visible = true;
     this.meditateAcc = 0;
@@ -821,13 +703,13 @@ export class DaiLoAmTuWorld {
   }
 
   private updateMovement(dt: number): void {
-    const pos = this.monk.root.position;
+    const pos = this.actor.position;
     if (this.keyDir.lengthSq() > 0) {
       const step = this.keyDir.clone().normalize().multiplyScalar(WALK_SPEED * dt);
       pos.x += step.x;
       pos.z += step.y;
       this.walkPhase += dt * 9;
-      this.monk.root.rotation.y = Math.atan2(step.x, step.y);
+      if (Math.abs(step.x) > 1e-4) this.facing = step.x > 0 ? 1 : -1;
       this.pushOutOfObstacles(pos);
       pos.x = Math.min(BOUNDS.maxX, Math.max(BOUNDS.minX, pos.x));
       pos.z = Math.min(BOUNDS.maxZ, Math.max(BOUNDS.minZ, pos.z));
@@ -851,49 +733,33 @@ export class DaiLoAmTuWorld {
     pos.z += (dz / dist) * step;
     this.pushOutOfObstacles(pos);
     this.walkPhase += dt * 9;
-    const targetYaw = Math.atan2(dx, dz);
-    this.monk.root.rotation.y = targetYaw;
+    if (Math.abs(dx) > 1e-4) this.facing = dx > 0 ? 1 : -1;
   }
 
-  private computeTargetPose(t: number): PoseValues {
-    if (this.gasshoT > 0) {
-      return { ...REST, headX: 0.25, upperX: 0.1, armL: -1.0, armR: -1.0, armZL: 0.35, armZR: -0.35 };
-    }
-    if (this.seatedId !== null) {
-      return { ...REST, rootY: 0.22, headX: 0.08, armL: -1.0, armR: -1.0, armZL: 0.25, armZR: -0.25, legL: -1.45, legR: -1.45 };
-    }
+  // Which drawing the current state should show.
+  private wantedPose(): string {
+    if (this.gasshoT > 0) return "pray";
+    if (this.seatedId !== null) return "sit";
     if (this.target || this.keyDir.lengthSq() > 0) {
-      const s = Math.sin(this.walkPhase);
-      return {
-        ...REST,
-        rootY: Math.abs(Math.cos(this.walkPhase)) * 0.05,
-        legL: s * 0.6,
-        legR: -s * 0.6,
-        armL: -s * 0.5,
-        armR: s * 0.5,
-      };
+      return Math.sin(this.walkPhase) >= 0 ? "walk1" : "walk2";
     }
-    if (this.mode === "bow") return sampleBowKeys(this.bowT / BOW_CYCLE);
-    if (this.mode === "dance") {
-      const s = Math.sin(this.danceT * 6);
-      return {
-        ...REST,
-        rootY: Math.abs(s) * 0.12,
-        armL: -1.2 + s * 0.6,
-        armR: -1.2 - s * 0.6,
-        armZL: 0.8 + s * 0.3,
-        armZR: -0.8 - s * 0.3,
-        legL: s * 0.3,
-        legR: -s * 0.3,
-      };
+    if (this.mode === "bow") {
+      const phase = this.bowT / BOW_CYCLE;
+      if (phase < 0.25) return "pray";
+      if (phase < 0.45) return "kneel";
+      if (phase < 0.72) return "prostrate";
+      return "kneel";
     }
-    // Idle breathing.
-    return {
-      ...REST,
-      headX: Math.sin(t * 2) * 0.02,
-      armL: 0.05 + Math.sin(t * 2.5) * 0.02,
-      armR: 0.05 + Math.sin(t * 2.5) * 0.02,
-    };
+    if (this.mode === "dance") return "dance";
+    return "idle";
+  }
+
+  private frameFor(pose: string): number {
+    for (const name of POSE_FALLBACK[pose] ?? [pose]) {
+      const i = this.art.poses[name];
+      if (i !== undefined) return i;
+    }
+    return 0;
   }
 
   private poseLabel(): Pose {
@@ -904,27 +770,50 @@ export class DaiLoAmTuWorld {
   }
 
   private applyPose(dt: number, t: number): void {
-    const want = this.computeTargetPose(t);
-    const k = Math.min(1, dt * 14);
-    const p = this.pose;
-    (Object.keys(p) as Array<keyof PoseValues>).forEach((key) => {
-      p[key] = lerp(p[key], want[key], k);
-    });
-    const monk = this.monk;
-    monk.root.position.y = p.rootY;
-    const dancing = this.mode === "dance" && !this.target && this.seatedId === null && this.gasshoT <= 0;
-    monk.upper.rotation.x = p.upperX;
-    monk.upper.rotation.y = dancing ? Math.sin(this.danceT * 3) * 0.4 : lerp(monk.upper.rotation.y, 0, k);
-    monk.head.rotation.x = p.headX;
-    monk.armL.rotation.set(p.armL, 0, p.armZL);
-    monk.armR.rotation.set(p.armR, 0, p.armZR);
-    monk.legL.rotation.x = p.legL;
-    monk.legR.rotation.x = p.legR;
+    const frame = this.frameFor(this.wantedPose());
+    if (this.spriteTex) this.spriteTex.offset.x = frame / this.art.frames;
 
-    this.blinkT -= dt;
-    if (this.blinkT <= 0) this.blinkT = 3 + Math.random() * 2;
-    const eyeOpen = this.seatedId !== null || this.gasshoT > 0 ? 0.15 : this.blinkT < 0.12 ? 0.15 : 1;
-    monk.eyes.forEach((eye) => eye.scale.y = eyeOpen);
+    // Face the camera around the vertical axis only, so the character never lies down or shears.
+    const dx = this.camera.position.x - this.actor.position.x;
+    const dz = this.camera.position.z - this.actor.position.z;
+    this.sprite.rotation.y = Math.atan2(dx, dz);
+
+    // Mirror the walk drawings so the character faces the way it is going, judged in screen space.
+    const right = Math.cos(this.sprite.rotation.y) * this.facing;
+    const flip = right >= 0 ? 1 : -1;
+    this.sprite.scale.x = lerp(this.sprite.scale.x, flip, Math.min(1, dt * 12)) || flip;
+
+    // A small bob while walking, and a settle while seated.
+    const walking = !!this.target || this.keyDir.lengthSq() > 0;
+    const seated = this.seatedId !== null;
+    const bob = walking ? Math.abs(Math.sin(this.walkPhase)) * 0.05 : Math.sin(t * 2) * 0.01;
+    const targetY = (seated ? 0.16 : 0) + this.spriteH / 2 + bob;
+    this.sprite.position.y = lerp(this.sprite.position.y, targetY, Math.min(1, dt * 10));
+  }
+
+  setCharacter(art: CharacterArt): void {
+    this.art = art;
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      art.file,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.magFilter = THREE.LinearFilter;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.generateMipmaps = true;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.repeat.set(1 / art.frames, 1);
+        tex.offset.set(0, 0);
+        const old = this.spriteTex;
+        this.spriteTex = tex;
+        this.spriteMat.map = tex;
+        this.spriteMat.needsUpdate = true;
+        old?.dispose();
+      },
+      undefined,
+      () => this.events.onArtError?.(),
+    );
   }
 
   private updateMode(dt: number): void {
@@ -946,14 +835,15 @@ export class DaiLoAmTuWorld {
     }
   }
 
-  // Camera only glides to a zone preset while a transition is running, so orbit dragging is not
-  // pulled back every frame.
   private updateCamera(dt: number): void {
+    // The look-at point always tracks the character, so orbiting and walking both stay framed.
+    // Aim a little above the character and a little ahead of it, so the altar stays in the frame.
+    this.lookAt.copy(this.actor.position).add(new THREE.Vector3(0, 2.4, -4));
+    this.controls.target.lerp(this.lookAt, Math.min(1, dt * 4));
     if (!this.cameraTween) return;
-    const k = Math.min(1, dt * 2.2);
-    this.camera.position.lerp(this.cameraGoal.pos, k);
-    this.controls.target.lerp(this.cameraGoal.look, k);
-    if (this.camera.position.distanceTo(this.cameraGoal.pos) < 0.05) this.cameraTween = false;
+    const goal = this.actor.position.clone().add(this.cameraOffset);
+    this.camera.position.lerp(goal, Math.min(1, dt * 2.2));
+    if (this.camera.position.distanceTo(goal) < 0.15) this.cameraTween = false;
   }
 
   private tick = (): void => {
@@ -967,7 +857,7 @@ export class DaiLoAmTuWorld {
     this.updateMode(dt);
     this.applyPose(dt, t);
 
-    const zone = this.zoneFor(this.monk.root.position.x, this.monk.root.position.z);
+    const zone = this.zoneFor(this.actor.position.x, this.actor.position.z);
     if (zone !== this.zone) {
       this.applyCameraPreset(zone, false);
     }
@@ -977,10 +867,14 @@ export class DaiLoAmTuWorld {
       this.events.onPoseChange?.(label);
     }
 
-    this.lanterns.forEach((lantern, i) => {
-      lantern.rotation.z = Math.sin(t * 1.5 + i) * 0.06;
+    const camX = this.camera.position.x;
+    const camZ = this.camera.position.z;
+    this.billboards.forEach((b) => {
+      b.rotation.y = Math.atan2(camX - b.position.x, camZ - b.position.z);
     });
-    this.foliage.rotation.y = Math.sin(t * 0.2) * 0.05;
+    this.lanterns.forEach((light, i) => {
+      light.intensity = 13 + Math.sin(t * 2.2 + i) * 2;
+    });
     this.clouds.rotation.y = t * 0.002;
     this.animateSmoke(dt);
 
